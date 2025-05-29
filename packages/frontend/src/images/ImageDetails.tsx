@@ -1,8 +1,12 @@
 import {useParams} from "react-router";
-import type {IImageData} from "../MockAppData.ts";
+import type {IApiImageData} from "../../../backend/src/common/ApiImageData.ts";
+import {ImageNameEditor} from "./ImageNameEditor.tsx";
 
 interface IImageDetailsProps {
-    imageData: IImageData[];
+    imageData: IApiImageData[];
+    fetchState: boolean;
+    errorState: boolean;
+    imageEdit: (id: string, newName: string) => void;
 }
 
 export function ImageDetails(props: IImageDetailsProps) {
@@ -12,14 +16,18 @@ export function ImageDetails(props: IImageDetailsProps) {
     const image = props.imageData.find(image => image.id === imageId);
 
     if (!image) {
+        return <div>{props.fetchState ? <h2> Loading... </h2> : ""}</div>;
+    }
+    if (props.errorState) {
         return <div><h2>Image not found</h2></div>;
     }
-
 
     return (
         <div>
             <h2>{image.name}</h2>
             <p>By {image.author.username}</p>
+            <ImageNameEditor initialValue={image.name} imageId={image.id}
+            imageEdit={props.imageEdit}/>
             <img className="ImageDetails-img" src={image.src} alt={image.name} />
         </div>
     )
