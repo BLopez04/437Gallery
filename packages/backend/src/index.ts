@@ -34,6 +34,10 @@ app.get(Object.values(ValidRoutes), (req: Request, res: Response) => {
     res.sendFile("index.html", options);
 });
 
+app.get(Object.values(ValidRoutes), (req: Request, res: Response) => {
+    res.sendFile("index.html", options);
+});
+
 app.listen(PORT, () => {
     console.log(`Server running at http://localhost:${PORT}`);
 });
