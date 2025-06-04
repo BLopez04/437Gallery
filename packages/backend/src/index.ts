@@ -4,6 +4,9 @@ import {ValidRoutes} from "./common/ValidRoutes";
 import {connectMongo} from "./connectMongo";
 import {ImageProvider} from "./ImageProvider";
 import {registerImageRoutes} from "./routes/imageRoutes";
+import {registerAuthRoutes} from "./routes/authRoutes";
+import {CredentialsProvider} from "./CredentialsProvider";
+import {verifyAuthToken} from "./authMiddleware";
 
 dotenv.config(); // Read the .env file in the current working directory, and load values into process.env.
 const PORT = process.env.PORT || 3000;
@@ -14,8 +17,10 @@ mongoClient.connect()
     .then(() => console.log("Connected to Mongo"))
 
 export const IMAGES = new ImageProvider(mongoClient);
+export const CREDENTIALS = new CredentialsProvider(mongoClient)
 
 const STATIC_DIR = process.env.STATIC_DIR || "public";
+
 const options = {
     root: process.env.STATIC_DIR
 }
@@ -23,6 +28,7 @@ const app = express();
 
 app.use(express.json()) // for parsing application/json
 app.use(express.urlencoded({ extended: true })) // for parsing application/x-www-form-urlencoded
+app.locals.JWT_SECRET = process.env.JWT_SECRET;
 
 app.use(express.static(STATIC_DIR));
 
@@ -42,6 +48,9 @@ app.listen(PORT, () => {
     console.log(`Server running at http://localhost:${PORT}`);
 });
 
+
+registerAuthRoutes(app, CREDENTIALS)
+app.use("/api/*", verifyAuthToken);
 registerImageRoutes(app, IMAGES)
 
 export function waitDuration(numMs: number): Promise<void> {

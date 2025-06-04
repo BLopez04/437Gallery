@@ -1,0 +1,86 @@
+import express, {Request, Response} from "express";
+import {CredentialsProvider} from "../CredentialsProvider";
+import jwt from "jsonwebtoken";
+
+export interface IAuthTokenPayload {
+    username: string;
+}
+
+function generateAuthToken(username: string, jwtSecret: string): Promise<string> {
+    return new Promise<string>((resolve, reject) => {
+        const payload: IAuthTokenPayload = {
+            username
+        };
+        jwt.sign(
+            payload,
+            jwtSecret,
+            { expiresIn: "1d" },
+            (error, token) => {
+                if (error) reject(error);
+                else resolve(token as string);
+            }
+        );
+    });
+}
+
+export function registerAuthRoutes(app: express.Application, credentialsProvider: CredentialsProvider) {
+    app.post("/auth/register", async (req: Request, res: Response) => {
+        try {
+            const { username, password } = req.body;
+
+            if (!username || !password) {
+                res.status(400).send(
+                    {   error: "Bad request",
+                        message: "Missing username or password"
+                    })
+                return;
+            }
+
+            const registered = await credentialsProvider.registerUser(username, password)
+
+            if (!registered) {
+                res.status(409).send({
+                    error: "Bad request",
+                    message: `Username already taken`
+                });
+                return;
+            }
+
+            res.status(201).send()
+        }
+        catch(err) {
+            res.status(500).send("Failed to register user")
+        }
+    });
+
+    app.post("/auth/login", async (req: Request, res: Response) => {
+        try {
+            const { username, password } = req.body;
+
+            if (!username || !password) {
+                res.status(400).send(
+                    {   error: "Bad request",
+                        message: "Missing username or password"
+                    })
+                return;
+            }
+
+            const verified = await credentialsProvider.verifyPassword(username, password)
+
+            if (!verified) {
+                res.status(401).send({
+                    error: "Failed Login",
+                    message: `Incorrect username or password`
+                });
+                return;
+            }
+
+            const token = await generateAuthToken(username, req.app.locals.JWT_SECRET)
+            res.status(200).send(token)
+        }
+        catch(err) {
+            res.status(500).send("Failed to login user")
+        }
+    });
+
+}

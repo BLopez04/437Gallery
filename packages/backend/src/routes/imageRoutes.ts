@@ -8,6 +8,7 @@ export function registerImageRoutes(app: express.Application, imageProvider: Ima
     app.get("/api/images", async (req: Request, res: Response) => {
         try {
             await waitDuration(1000);
+
             const paramValue = req.query.contains;
 
             const images = await imageProvider.getAllImages(paramValue as string)
@@ -37,31 +38,45 @@ export function registerImageRoutes(app: express.Application, imageProvider: Ima
         try {
             const MAX_NAME_LENGTH = 100;
             const id = req.params.imageId;
-            const name = req.body.name;
+            const newName = req.body.name;
+            const username = req.user?.username;
+
             if (!ObjectId.isValid(id)) {
                 res.status(404).send(
                     {   error: "Not Found",
                         message: "Image Does Not Exist"
                     })
+                return;
             }
-            if (name.length > MAX_NAME_LENGTH) {
+
+            const owner = await imageProvider.verifiedOwner(id, username)
+            if (!owner) {
+                res.status(403).send(
+                    {   error: "Forbidden",
+                        message: "You do not have permission to edit this image"
+                    }
+                )
+                return;
+            }
+
+            if (newName.length > MAX_NAME_LENGTH) {
                 res.status(422).send({
                     error: "Unprocessable Entity",
                     message: `Image name exceeds ${MAX_NAME_LENGTH} characters`
                 });
+                return;
             }
-            imageProvider.updateImageName(id, name)
-                .then(ret => {
-                    if (ret === 0) {
-                        res.status(400).send({
-                            error: "Bad Request",
-                            message: "Request may not have fit format"
-                        });
-                    }
-                    res.status(204).send()
-                })
-                .catch(() =>
-                res.status(404).send("Failed to find resource"))
+
+            const updated = await imageProvider.updateImageName(id, newName);
+
+            if (updated === 0) {
+                res.status(404).send({
+                    error: "Not Found",
+                    message: "Failed to find resource"
+                });
+                return;
+            }
+            res.status(204).send()
         }
         catch(err) {
             res.status(500).send("Failed to update image name")

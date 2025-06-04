@@ -14,13 +14,19 @@ export function ImageNameEditor(props: INameEditorProps) {
     const [editError, setEditError] = useState(false);
 
     async function handleSubmitPressed() {
-        setInProgress(true);
-        fetch("/api/images")
+        fetch(`/api/images/${props.imageId}`,
+            {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ name: input })
+            })
             .then(res => {
                 if (res.status >= 400) {
                     throw new Error(`HTTP error: ${res.status}`)
                 }
-                return res.json()
+                return
             })
             .then(() => {
                 setInProgress(false);

@@ -24,7 +24,15 @@ export class ImageProvider {
         }
         return this.collection.find().toArray(); // Without any options, will by default get all documents in the collection as an array.
     }
+
+    async verifiedOwner(imageId: string, username: string | undefined): Promise<boolean> {
+        const img = await this.collection.findOne({_id : new ObjectId(imageId)})
+        return img?.authorId === username
+    }
+
+
     async updateImageName(imageId: string, newName: string): Promise<number> {
+
         return this
             .collection.updateOne({_id : new ObjectId(imageId)}, {$set: {name: newName}})
             .then(res => res.matchedCount)
