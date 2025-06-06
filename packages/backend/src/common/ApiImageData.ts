@@ -2,10 +2,6 @@ export interface IApiImageData {
     id: string;
     src: string;
     name: string;
-    author: IApiUserData;
+    authorId: string;
 }
 
-export interface IApiUserData {
-    id: string,
-    username: string
-}

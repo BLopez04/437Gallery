@@ -30,11 +30,15 @@ export class ImageProvider {
         return img?.authorId === username
     }
 
-
     async updateImageName(imageId: string, newName: string): Promise<number> {
 
         return this
             .collection.updateOne({_id : new ObjectId(imageId)}, {$set: {name: newName}})
             .then(res => res.matchedCount)
+    }
+
+    async createImage(src: string, name: string, authorId: string) {
+        const res = await this.collection.insertOne({src, name, authorId})
+        return res.insertedId
     }
 }

@@ -1,7 +1,8 @@
 import express, {Request, Response} from "express";
 import { ImageProvider } from "../ImageProvider";
-import {mongoClient, waitDuration} from "../index";
+import {waitDuration} from "../index";
 import {ObjectId} from "mongodb";
+import {imageMiddlewareFactory, handleImageFileErrors} from "../imageUploadMiddleware";
 
 export function registerImageRoutes(app: express.Application, imageProvider: ImageProvider) {
 
@@ -13,17 +14,11 @@ export function registerImageRoutes(app: express.Application, imageProvider: Ima
 
             const images = await imageProvider.getAllImages(paramValue as string)
 
-            const userMap = new Map();
-            const users = await mongoClient.db().collection("users").find().toArray();
-            users.forEach(user => {
-                userMap.set(user._id.toString(),
-                    { id: user._id.toString(), username: user.username })
-            })
             const normalized = images.map(image => ( {
                 id: image._id.toString(),
                 src: image.src,
                 name: image.name,
-                author: userMap.get(image.authorId) || { id: image.authorId.toString(), username: "Unknown"}
+                authorId: image.authorId
             }))
 
             console.log(normalized)
@@ -82,5 +77,37 @@ export function registerImageRoutes(app: express.Application, imageProvider: Ima
             res.status(500).send("Failed to update image name")
         }
     });
+
+    app.post("/api/images",
+        imageMiddlewareFactory.single("image"),
+        handleImageFileErrors,
+        async (req: Request, res: Response) => {
+            try {
+                if (!req.file || !req.file.filename) {
+                    res.status(400).send({
+                        error: "Bad Request",
+                        message: "Image file or filename missing"
+                    })
+                    return;
+                }
+
+                const username = req.user?.username || "Anonymous";
+
+                const resultId = await imageProvider.createImage(`/uploads/${req.file.filename}`,
+                    req.body.name, username)
+
+                if (!resultId) {
+                    res.status(500).send("Error on image upload")
+                    return;
+                }
+
+                res.status(201).send();
+
+            }
+            catch (err) {
+                res.status(500).send("Server error on upload");
+            }
+        }
+    );
 
 }

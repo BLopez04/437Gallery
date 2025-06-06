@@ -7,6 +7,7 @@ interface IImageDetailsProps {
     fetchState: boolean;
     errorState: boolean;
     imageEdit: (id: string, newName: string) => void;
+    authToken: string;
 }
 
 export function ImageDetails(props: IImageDetailsProps) {
@@ -14,7 +15,6 @@ export function ImageDetails(props: IImageDetailsProps) {
     const { imageId } = useParams();
 
     const image = props.imageData.find(image => image.id === imageId);
-
     if (!image) {
         return <div>{props.fetchState ? <h2> Loading... </h2> : ""}</div>;
     }
@@ -25,9 +25,9 @@ export function ImageDetails(props: IImageDetailsProps) {
     return (
         <div>
             <h2>{image.name}</h2>
-            <p>By {image.author.username}</p>
+            <p>By {image.authorId}</p>
             <ImageNameEditor initialValue={image.name} imageId={image.id}
-            imageEdit={props.imageEdit}/>
+            imageEdit={props.imageEdit} authToken={props.authToken}/>
             <img className="ImageDetails-img" src={image.src} alt={image.name} />
         </div>
     )

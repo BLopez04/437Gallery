@@ -46,7 +46,8 @@ export function registerAuthRoutes(app: express.Application, credentialsProvider
                 return;
             }
 
-            res.status(201).send()
+            const token = await generateAuthToken(username, req.app.locals.JWT_SECRET)
+            res.status(201).send(token)
         }
         catch(err) {
             res.status(500).send("Failed to register user")
